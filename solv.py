@@ -7,6 +7,11 @@ w,h = 7,7
 v_array = [[3],[5],[2,3],[6],[6],[5],[3]]
 h_array = [[2,2],[7],[2,4],[7],[5],[3],[1]]
 
+w,h = 10,10
+v_array = [[2],[3],[1],[2,1],[5],[4],[1,4,1],[1,5],[2,2],[2,1]]
+h_array = [[1,2],[2],[1],[1],[2],[2,4],[2,6],[8],[1,1],[2,2]]
+
+
 # これは以下のようになる。
 #             2
 #       3  5  3  6  6  5  3
@@ -147,32 +152,38 @@ def fix_easy(hl, line):
 
 
 # ----------------------------------------------------------------
+print("Problem")
 print( show(t, v_array, h_array))
 
-print("まずは前処理として、確定コマを探す")
+# まずは前処理として、確定コマを探す
 apply_all(t, fix_easy)
 apply_all(t, fix_line)
-print( show(t, v_array, h_array))
-print("未確定のコマを確定していく")
-
 
 def find_avairable_patterns(l, line):
     u"""
     lineについて、配置可能なパターンをすべて返す。
     """
-    # Todo: 分割前の位置を覚えておかないと書き戻せない
+    matches = re.finditer(r'[^\^]+', str_join(line))
+    idxes   = [ m.start() for m in matches ]
+    areas   = [ m.group() for m in matches ]
+
     areas = split(r'\^', str_join(line))
 
     # 再帰で配置可能なパターンを探索
     patterns = find_avairable_patterns_sub(len(areas), l, areas, [], [])
 
-    print("------------")
-    print(areas)
-    print(patterns)
-
     if len(patterns) > 1:
         # Todo: パターンの中で共通する部分を塗る
+        print(patterns)
         return line
+
+    # 書き戻す
+
+    pattern = patterns[0]
+    fixed = [ fix_line(z[0], fix_easy(z[0], z[1])) for z in zip(pattern, areas) ]
+#    print(fixed)
+    for f,i in zip(fixed, idxes):
+        line[i:(i+len(f))] = f
 
     return line
 
@@ -191,10 +202,28 @@ def find_avairable_patterns_sub(max_depth, least_l, least_area, result, results,
 
     return results
 
-for y in range(len(h_array)):
-    print(find_avairable_patterns(h_array[y], t[y]))
+def is_complete(t):
+    return not (True in [ ('_' in l) for l in t])
 
+# まずは単純な処理を繰り返して収束するまで
+prev_t = None
+while prev_t != t:
+    prev_t = list(t)
+    if is_complete(t):
+        print("is_completed")
+        break
+    apply_all(t, find_avairable_patterns)
+    apply_all(t, fix_line)
+    apply_all(t, find_avairable_patterns)
+    apply_all(t, fix_line)
+    print( show(t, v_array, h_array))
 
 
 # ----------------------------------------------------------------
-# print( show(t, v_array, h_array))
+if is_complete(t):
+    print("Solved!!")
+    print( show(t, v_array, h_array))
+
+
+print("NotSolved!!")
+print( show(t, v_array, h_array))
